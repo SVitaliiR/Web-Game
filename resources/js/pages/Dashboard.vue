@@ -14,6 +14,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 import { ref, computed, reactive, onMounted } from 'vue';
 
+
 const form = reactive({
   resource: 'rock',
 })
@@ -139,7 +140,6 @@ const resourceStyles = computed(() => {
                     class="w-30 h-30 rounded-full shadow relative overflow-hidden transition-all duration-500 flex items-center justify-center text-2xl"
                     :class="resourceStyles.button"
                     @click="handleClick"
-                    :disabled="isClicked"
                 >
                     <span
                         class="absolute left-0 bottom-0 w-full bg-white z-0"
@@ -157,7 +157,6 @@ const resourceStyles = computed(() => {
                     class="h-12 w-12 rounded-full border flex items-center justify-center bg-white font-semibold transition focus:outline-none"
                     :class="resourceStyles.select"
                     type="button"
-                    :disabled="isClicked"
                   >
                     <img
                       :src="resources.find(r => r.value === selectedResource)?.img"
@@ -178,7 +177,6 @@ const resourceStyles = computed(() => {
                         :key="resource.value"
                         @click="selectResource(resource)"
                         class="cursor-pointer hover:bg-gray-100 rounded-full p-1 mb-1"
-                        :class="{ 'pointer-events-none opacity-50': isClicked }"
                       >
                         <img :src="resource.img" alt="" class="w-10 h-10 rounded-full" />
                       </li>

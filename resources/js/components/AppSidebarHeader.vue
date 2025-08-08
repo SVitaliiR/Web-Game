@@ -15,7 +15,9 @@ withDefaults(
 
 <template>
     <header
-        class="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border/70 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-4"
+            class="bg-green-900 rounded-t-xl flex h-16 shrink-0 items-center gap-2 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-4"
+            style="background-image: url('/images/Background.jpg'); background-size: cover; background-position: top;"
+
     >
         <div class="flex items-center gap-2">
             <SidebarTrigger class="-ml-1" />

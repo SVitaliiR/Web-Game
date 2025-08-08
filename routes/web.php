@@ -1,26 +1,38 @@
 <?php
 
+use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use Illuminate\Http\Request;
+use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\ResourceController;
+use App\Http\Controllers\BuildingController;
+
 
 Route::get('/', function () {
-    return Inertia::render('Welcome');
-})->name('home');
+    return Inertia::render('Welcome', [
+        'canLogin' => Route::has('login'),
+        'canRegister' => Route::has('register'),
+        'laravelVersion' => Application::VERSION,
+        'phpVersion' => PHP_VERSION,
+    ]);
+});
 
-Route::controller(ResourceController::class)
-    ->group(function () {
-        Route::post('/gather-resource', 'gatherResource')->name('gather-resource');
-    });
-
-Route::get('dashboard', function () {
+Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::get('/api/resources', [ResourceController::class, 'getResources'])
-    ->middleware('auth')
-    ->name('api.resources');
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-require __DIR__.'/settings.php';
+    Route::post('/gather-resource', [ResourceController::class, 'gatherResource']);
+    Route::get('/resources', [ResourceController::class, 'getResources']);
+    Route::get('/leaderboard', [ResourceController::class, 'leaderboard']);
+
+    // Building routes
+    Route::post('/buildings', [BuildingController::class, 'store']);
+    Route::get('/buildings', [BuildingController::class, 'index']);
+});
+
 require __DIR__.'/auth.php';

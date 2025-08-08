@@ -4,7 +4,14 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
 import PlaceholderPattern from '../components/PlaceholderPattern.vue';
 
+import { ref, computed, reactive, onMounted, defineProps } from 'vue';
+import { Image } from 'lucide-vue-next';
 
+const props = defineProps({
+  buildings: Array as () => Array<{id: number; building_name: string; position: number}>,
+});
+
+// Breadcrumbs for navigation
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Dashboard',
@@ -12,14 +19,18 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-import { ref, computed, reactive, onMounted } from 'vue';
+// Holds the indices of the squares that have been clicked
+const clickedSquares = ref<number[]>([]);
 
-
+// Form for gathering resources
 const form = reactive({
   resource: 'rock',
 })
 
+// State for the resource gathering button
 const isClicked = ref(false);
+
+// Computed property to determine the fill duration for the resource gathering animation
 const fillDuration = computed(() => {
     switch (selectedResource.value) {
         case 'rock':
@@ -34,6 +45,58 @@ const fillDuration = computed(() => {
     }
 });
 
+// buildings Drop down list source/functionality
+const buildingsList = [
+    { name: 'Castle', img: '/images/castle.svg', cost: {} },
+    { name: 'Quarry', img: '/images/quarry.svg', cost: {} },
+    { name: 'Farm', img: '/images/farm.svg', cost: {} },
+    { name: 'Sawmill', img: '/images/sawmill.svg', cost: {} },
+    { name: 'Mine', img: '/images/mine.svg', cost: {} }
+]
+// State for the building dropdown visibility
+const buildingDropdownOpen = ref(false);1
+// The currently active square for building placement
+const activeSquare = ref<number | null>(null);
+
+const handleSquareClickState = ref(false)
+
+// Handles clicking on a square in the grid
+function handleSquareClick(n: number) {
+  handleSquareClickState.value = true;
+  if (!clickedSquares.value.includes(n)) {
+    clickedSquares.value.push(n);
+  }
+  activeSquare.value = n;
+  buildingDropdownOpen.value = true;
+}
+
+// Handles selecting a building from the dropdown
+async function selectBuilding(building: { name: string; img: string; cost: Record<string, number> }) {
+  if (activeSquare.value !== null) {
+    await placeBuilding(building.name, activeSquare.value);
+    squares.value[activeSquare.value] = building.img;
+  }
+  buildingDropdownOpen.value = false;
+  activeSquare.value = null;
+}
+
+async function placeBuilding(buildingName: string, position: number) {
+  try {
+    await router.post('/api/buildings', {
+      building_name: buildingName,
+      position: position,
+    });
+    } catch (error) {
+    console.error('Failed to place building:', error);
+    }
+};
+
+// The currently selected building
+const selectedBuilding = ref<string | null>(null);
+// The state of the grid squares, holding building names
+const squares = ref<(string | null)[]>(Array(50).fill(null));
+
+// Handles the click event for gathering resources
 async function handleClick() {
     isClicked.value = true;
     form.resource = selectedResource.value; // Update the resource in the form
@@ -47,7 +110,7 @@ async function handleClick() {
     });
 }
 
-
+// The player's resources
 const resources = ref([
   { value: 'rock', label: 'Rock', img: '/images/rock.png', count: 0 },
   { value: 'wood', label: 'Wood', img: '/images/wood.svg', count: 0 },
@@ -55,14 +118,15 @@ const resources = ref([
   { value: 'gold', label: 'Gold', img: '/images/gold.png', count: 0 },
 ]);
 
+// Fetches the player's resources from the API
 async function fetchResources() {
   try {
-    const response = await fetch('/api/resources');
+    const response = await fetch('/resources');
     if (!response.ok) throw new Error('Failed to fetch resources');
     const data = await response.json();
     if (data.resources) {
       resources.value = resources.value.map(r => {
-        const found = data.resources.find(res => res.type === r.value);
+        const found = data.resources.find((res: any) => res.type === r.value);
         return { ...r, count: found ? found.quantity : 0 };
       });
     }
@@ -71,17 +135,32 @@ async function fetchResources() {
   }
 }
 
-onMounted(fetchResources);
+// Fetch resources when the component is mounted
+onMounted(() => {
+  if (props.buildings) {
+    props.buildings.forEach(building => {
+      const buildingInfo = buildingsList.find(b => b.name === building.building_name);
+      if (buildingInfo) {
+        squares.value[building.position] = buildingInfo.img;
+      }
+    });
+  }
+  fetchResources()
+});
 
+// State for the resource selection dropdown visibility
 const dropdownOpen = ref(false);
 
-function selectResource(resource) {
+// Handles selecting a resource from the dropdown
+function selectResource(resource: any) {
   selectedResource.value = resource.value;
   dropdownOpen.value = false;
 }
 
+// The currently selected resource for gathering
 const selectedResource = ref('rock');
 
+// Computed property for dynamic styling based on the selected resource
 const resourceStyles = computed(() => {
     switch (selectedResource.value) {
         case 'wood':
@@ -107,39 +186,100 @@ const resourceStyles = computed(() => {
             };
     }
 });
+
+// Calculates the left position for the building dropdown
+const calcLeftPosition = (n) => {
+    const col = (n - 1) % 7;
+    return `${col * 13}%`;
+};
+
+// Calculates the top position for the building dropdown
+const calTopPosition = (n) => {
+    const row = Math.floor((n - 1) / 7);
+    return `${row * 13}%`;
+};
+
+// Closes the building dropdown
+function closeBuildingDropdown() {
+  if (!handleSquareClickState.value) {
+    buildingDropdownOpen.value = false;
+    activeSquare.value = null;
+  }
+  handleSquareClickState.value = false;
+
+}
 </script>
 
 <template>
     <Head title="Dashboard" />
 
-    <AppLayout :breadcrumbs="breadcrumbs">
+    <AppLayout :breadcrumbs="breadcrumbs" @click="closeBuildingDropdown">
+      <!-- Building selection dropdown -->
+      <!-- <select v-model="selectedBuilding" class="mb-4 p-2 border rounded">
+        <option v-for="building in buildings" :key="building.name" :value="building.name">
+          {{ building.name }} ({{ building.cost.wood }} Wood, {{ building.cost.stone }} Stone,)
+        </option>
+      </select> -->
+      <!-- Display player's resources in the top right corner -->
+      <div class="absolute top-4 right-4 flex flex-col items-end gap-2 z-20">
+          <div v-for="resource in resources" :key="resource.value + '-top'" class="flex items-center gap-1">
+              <span class="text-xs font-bold text-white-700 min-w-[18px] text-right">{{ resource.count }}</span>
+              <img :src="resource.img" :alt="resource.label" class="w-7 h-7 rounded-full border border-gray-200 shadow bg-white" />
+          </div>
+      </div> 
         <div
-            class="flex h-full flex-1 gap-4 flex-col rounded-xl relative relative"
+            class="flex h-full flex-1 gap-4 flex-col rounded-b-xl relative bg-green-900"
+            style="background-image: url('/images/Background.jpg'); background-size: cover; background-position: center;"
         >
-            <!-- Resource images in top right corner -->
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-                <div class="grid grid-cols-5 grid-rows-5 gap-2">
-                    <svg v-for="n in 25" :key="n" width="72" height="72" viewBox="0 0 72 72" fill="none">
-                        <rect x="4" y="4" width="64" height="64" stroke="#d1d5db" stroke-width="3" fill="none" />
-                    </svg>
+            <!-- Main game grid -->
+            <div class="absolute inset-0 flex items-center justify-center z-10 overflow-visible">
+              <div class="grid grid-cols-7 grid-rows-7 gap-2 relative">
+                <!-- Grid squares for building -->
+                <div
+                  v-for="n in 49"
+                  :key="n"
+                  @click="handleSquareClick(n)"
+                  class="w-20 h-20 flex items-center justify-center border-2 border-gray-300 rounded-lg cursor-pointer transition bg-transparent relative"
+                  :style="{background: clickedSquares.includes(n) ? 'transparent' : 'transparent',
+                  opacity: clickedSquares.includes(n) ? 0.5 : 1 }"
+                  >
+                  <!-- Show ddl only for active aquare -->
+                  <img v-if="squares[n]" :src="squares[n]" alt="" class="w-19 h-19" />
+                </div>
+<!--  -->
+                <!-- Building dropdown for each square -->
+               <div
+                  v-for="n in 49"
+                  :key="n">
+                  <div
+                    v-if="buildingDropdownOpen && activeSquare === n"
+                    :style="`left: `+ calcLeftPosition(n) + `; top: `+ calTopPosition(n) + `;`"
+                    class="absolute mt-2 w-40 border rounded-lg shadow-lg z-20 text-black bg-gray-200 p-2"
+                    >
+                      <ul class="flex flex-col items-start py-2">
+                        <li
+                          v-for="building in buildingsList"
+                          :key="building.name"
+                          @click.stop="selectBuilding(building)"
+                          class="cursor-pointer hover:bg-gray-100 rounded-full p-1 mb-1 flex items-center gap-2"
+                        >
+                          <img :src="building.img" alt="" class="w-8  h-8 rounded-full" />
+                          <span class="ml-2">{{ building.name }}</span>
+                        </li>
+                      </ul> 
+                  </div>
                 </div>
             </div>
-            <div class="absolute top-4 right-4 flex flex-col gap-2 z-20">
-                <div v-for="resource in resources" :key="resource.value + '-top'" class="flex items-center gap-1">
-                    <span class="text-xs font-bold text-white-700 min-w-[18px] text-right">{{ resource.count }}</span>
-                    <img :src="resource.img" :alt="resource.label" class="w-7 h-7 rounded-full border border-gray-200 shadow bg-white" />
-                </div>
-            </div> 
-            <div class="grid auto-rows-min gap-4 md:grid-cols-3">
-               
+            <div class="grid auto-rows-min gap-4 md:grid-cols-3">   
             </div>
-            <div class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
-            </div>
+            <!-- Resource gathering controls -->
             <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-10 flex items-center gap-4">
+                <!-- Resource gathering button -->
                 <button
                     class="w-30 h-30 rounded-full shadow relative overflow-hidden transition-all duration-500 flex items-center justify-center text-2xl"
                     :class="resourceStyles.button"
                     @click="handleClick"
+                    :disabled="isClicked"
                 >
                     <span
                         class="absolute left-0 bottom-0 w-full bg-white z-0"
@@ -149,12 +289,13 @@ const resourceStyles = computed(() => {
                             transitionDuration: isClicked ? fillDuration + 'ms' : '0ms'
                         }"
                     ></span>
-                    <span class="relative z-10">Click</span>
+                    <span class_name="relative z-10">Click</span>
                 </button>
+                <!-- Resource selection dropdown -->
                 <div class="relative">
                   <button
                     @click="dropdownOpen = !dropdownOpen"
-                    class="h-12 w-12 rounded-full border flex items-center justify-center bg-white font-semibold transition focus:outline-none"
+                    class="h-14 w-14 rounded-full border flex items-center justify-center bg-white font-semibold transition focus:outline-none"
                     :class="resourceStyles.select"
                     type="button"
                   >
@@ -185,5 +326,6 @@ const resourceStyles = computed(() => {
                 </div>
             </div>
         </div>
+      </div>
     </AppLayout>
 </template>

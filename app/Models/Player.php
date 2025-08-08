@@ -11,10 +11,26 @@ class Player extends Model
     ];
 
     /**
+     * Get the user that owns the player.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'player_id');
+    }
+
+    /**
      * Get the resources for the player.
      */
     public function resources()
     {
         return $this->hasMany(Resources::class);    
+    }
+
+    /**
+     * Get the buildings for the player.
+     */
+    public function buildings()
+    {
+        return $this->hasMany(Building::class);
     }
 }

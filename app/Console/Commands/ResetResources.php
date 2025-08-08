@@ -7,23 +7,9 @@ use App\Models\Resources;
 
 class ResetResources extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'app:reset-resources';
+    protected $description = 'Reset all resources';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Command description';
-
-    /**
-     * Execute the console command.
-     */
     public function handle()
     {
         Resources::all()->each(function ($resource) {

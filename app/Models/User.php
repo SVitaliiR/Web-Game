@@ -12,6 +12,11 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
+    public function player()
+    {
+        return $this->hasOne(Player::class, 'player_id');
+    }
+
     /**
      * The attributes that are mass assignable.
      *

@@ -14,8 +14,8 @@ class BuildingController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'type' => 'required|string|max:255',
+            'building_name' => 'required|string|max:255',
+            'position' => 'required|integer|min:0',
         ]);
 
         $user = Auth::user();
@@ -31,10 +31,9 @@ class BuildingController extends Controller
         $building = Building::create(
             [
                 'player_id' => $player->id,
-                'name' => $request->input('name'),
-                'type' => $request->input('type'),
+                'building_name' => $request->input('building_name'),
+                'position' => $request->input('position'),
             ],
-            // Additional fields in 'building' table will use default values specified in the migration file
         );
         return response()->json($building, 201);
     }

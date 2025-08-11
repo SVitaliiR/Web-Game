@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('buildings', function (Blueprint $table) {
             $table->foreignId('player_id')->constrained('players')->onDelete('cascade');
-            $table->string('name')->comment('Name of the building');
-            $table->string('type')->comment('Type of building, e.g., house, farm, mine');
+            $table->string('building_name')->comment('Name of the building');
+            $table->integer('position')->comment('Position of the building on the map');
             $table->integer('level')->default(1)->comment('Level of the building');
             $table->string('status')->default('active')->comment('Status of the building, e.g., active, under construction, destroyed');
             $table->integer('cost')->default(0)->comment('Cost of building or upgrading, e.g., in resources like wood, stone, or gold');

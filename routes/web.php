@@ -4,8 +4,8 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Settings\ProfileController;
-use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\BuildingController;
+use App\Http\Controllers\ResourceController;
 
 
 Route::get('/', function () {
@@ -18,7 +18,10 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
+    $buildings = (new BuildingController())->index();
+    return Inertia::render('Dashboard', [
+        'buildings' => $buildings->getData()->buildings,
+    ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
@@ -32,7 +35,6 @@ Route::middleware('auth')->group(function () {
 
     // Building routes
     Route::post('/buildings', [BuildingController::class, 'store']);
-    Route::get('/buildings', [BuildingController::class, 'index']);
 });
 
 require __DIR__.'/auth.php';

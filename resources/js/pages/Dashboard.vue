@@ -7,6 +7,8 @@ import PlaceholderPattern from '../components/PlaceholderPattern.vue';
 import { ref, computed, reactive, onMounted, defineProps } from 'vue';
 import { Image } from 'lucide-vue-next';
 
+
+
 const props = defineProps({
   buildings: Array as () => Array<{id: number; building_name: string; position: number}>,
 });
@@ -54,7 +56,7 @@ const buildingsList = [
     { name: 'Mine', img: '/images/mine.svg', cost: {} }
 ]
 // State for the building dropdown visibility
-const buildingDropdownOpen = ref(false);1
+const buildingDropdownOpen = ref(false);
 // The currently active square for building placement
 const activeSquare = ref<number | null>(null);
 
@@ -82,7 +84,7 @@ async function selectBuilding(building: { name: string; img: string; cost: Recor
 
 async function placeBuilding(buildingName: string, position: number) {
   try {
-    await router.post('/api/buildings', {
+    await router.post('/buildings', {
       building_name: buildingName,
       position: position,
     });
@@ -117,6 +119,8 @@ const resources = ref([
   { value: 'food', label: 'Food', img: '/images/food.png', count: 0 },
   { value: 'gold', label: 'Gold', img: '/images/gold.png', count: 0 },
 ]);
+
+
 
 // Fetches the player's resources from the API
 async function fetchResources() {

@@ -2,10 +2,8 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
-import PlaceholderPattern from '../components/PlaceholderPattern.vue';
-
 import { ref, computed, reactive, onMounted, defineProps } from 'vue';
-import { Image } from 'lucide-vue-next';
+import BuildingMenu from '../components/BuildingMenu.vue';
 
 
 
@@ -62,14 +60,22 @@ const activeSquare = ref<number | null>(null);
 
 const handleSquareClickState = ref(false)
 
+const buildingMenuOpen = ref(false);
+
 // Handles clicking on a square in the grid
 function handleSquareClick(n: number) {
-  handleSquareClickState.value = true;
-  if (!clickedSquares.value.includes(n)) {
-    clickedSquares.value.push(n);
+  if (squares.value[n]) {
+    handleSquareClickState.value = true;
+    activeSquare.value = n;
+    buildingMenuOpen.value = true;
+  } else {
+    handleSquareClickState.value = true;
+    if (!clickedSquares.value.includes(n)) {
+      clickedSquares.value.push(n);
+    }
+    activeSquare.value = n;
+    buildingDropdownOpen.value = true;
   }
-  activeSquare.value = n;
-  buildingDropdownOpen.value = true;
 }
 
 // Handles selecting a building from the dropdown
@@ -93,8 +99,20 @@ async function placeBuilding(buildingName: string, position: number) {
     }
 };
 
-// The currently selected building
-const selectedBuilding = ref<string | null>(null);
+async function destroyBuilding(position: number) {
+  const building = props.buildings.find(b => b.position === position);
+  if (!building) return;
+
+  try {
+    await router.delete(`/buildings/${building.id}`);
+    squares.value[position] = null;
+    buildingMenuOpen.value = false;
+    activeSquare.value = null;
+  } catch (error) {
+    console.error('Failed to destroy building:', error);
+  }
+}
+
 // The state of the grid squares, holding building names
 const squares = ref<(string | null)[]>(Array(50).fill(null));
 
@@ -134,7 +152,7 @@ async function fetchResources() {
         return { ...r, count: found ? found.quantity : 0 };
       });
     }
-  } catch (e) {
+  } catch {
     // Optionally handle error
   }
 }
@@ -207,6 +225,7 @@ const calTopPosition = (n) => {
 function closeBuildingDropdown() {
   if (!handleSquareClickState.value) {
     buildingDropdownOpen.value = false;
+    buildingMenuOpen.value = false;
     activeSquare.value = null;
   }
   handleSquareClickState.value = false;
@@ -255,6 +274,14 @@ function closeBuildingDropdown() {
                <div
                   v-for="n in 49"
                   :key="n">
+                  <BuildingMenu
+                    v-if="buildingMenuOpen && activeSquare === n"
+                    :style="`left: `+ calcLeftPosition(n) + `; top: `+ calTopPosition(n) + `;`"
+                    class="absolute mt-2 w-40 border rounded-lg shadow-lg z-20 text-black bg-gray-200 p-2"
+                    @upgrade="() => {} /* Placeholder for upgrade action */"
+                    @move="() => {} /* Placeholder for move action */"
+                    @destroy="destroyBuilding(n)"
+                  />
                   <div
                     v-if="buildingDropdownOpen && activeSquare === n"
                     :style="`left: `+ calcLeftPosition(n) + `; top: `+ calTopPosition(n) + `;`"

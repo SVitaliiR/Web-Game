@@ -35,6 +35,7 @@ Route::middleware('auth')->group(function () {
 
     // Building routes
     Route::post('/buildings', [BuildingController::class, 'store']);
+    Route::delete('/buildings/{building}', [BuildingController::class, 'destroy']);
 });
 
 require __DIR__.'/auth.php';

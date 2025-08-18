@@ -75,5 +75,30 @@ class BuildingController extends Controller
         $building->delete();
         return redirect()->route('dashboard');
     }
+
+    public function upgrade($id)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $player = $user->player;
+        if (!$player) {
+            return response()->json(['error' => 'Player not found'], 404);
+        }
+
+        $building = Building::where('id', $id)->where('player_id', $player->id)->first();
+        if (!$building) {
+            return response()->json(['error' => 'Building not found'], 404);
+        }
+        // Add logic to check for upgrade costs and max level
+        if ($building->level >= 10) {
+            return response()->json(['error' => 'Building is already at max level'], 400);
+        }
+        $building->level += 1;
+        $building->save();
+        return redirect()->route('dashboard');
+    }
 }
     

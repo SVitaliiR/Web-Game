@@ -8,7 +8,7 @@ import BuildingMenu from '../components/BuildingMenu.vue';
 
 
 const props = defineProps({
-  buildings: Array as () => Array<{id: number; building_name: string; position: number}>,
+  buildings: Array as () => Array<{id: number; building_name: string; position: number; level: number}>,
 });
 
 // Breadcrumbs for navigation
@@ -97,6 +97,26 @@ async function placeBuilding(buildingName: string, position: number) {
     console.error('Failed to place building:', error);
     }
 };
+
+async function upgradeBuilding(position: number) {
+  if (!props.buildings) return;
+  const building = props.buildings.find(b => b.position === position);
+  if (!building) return;
+
+  try {
+    await router.patch(`/buildings/${building.id}/upgrade`, {}, {
+      onSuccess: () => {
+        buildingMenuOpen.value = false;
+        activeSquare.value = null;
+      },
+      onError: (error) => {
+        console.error('Failed to upgrade building:', error);
+      }
+    });
+  } catch (error) {
+    console.error('Failed to upgrade building:', error);
+  }
+}
 
 async function destroyBuilding(position: number) {
   if (!props.buildings) return;
@@ -285,7 +305,8 @@ function closeBuildingDropdown() {
                     v-if="buildingMenuOpen && activeSquare === n"
                     :style="`left: `+ calcLeftPosition(n) + `; top: `+ calTopPosition(n) + `;`"
                     class="absolute mt-2 w-40 border rounded-lg shadow-lg z-20 text-black bg-gray-200 p-2"
-                    @upgrade="() => {} /* Placeholder for upgrade action */"
+                    :level="props.buildings.find(b => b.position === n)?.level"
+                    @upgrade="() => upgradeBuilding(n)"
                     @move="() => {} /* Placeholder for move action */"
                     @destroy="destroyBuilding(n)"
                   />

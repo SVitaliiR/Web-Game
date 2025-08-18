@@ -12,6 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('buildings', function (Blueprint $table) {
+            $table->id();
             $table->foreignId('player_id')->constrained('players')->onDelete('cascade');
             $table->string('building_name')->comment('Name of the building');
             $table->integer('position')->comment('Position of the building on the map');

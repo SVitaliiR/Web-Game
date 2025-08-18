@@ -2,7 +2,7 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
-import { ref, computed, reactive, onMounted, defineProps } from 'vue';
+import { ref, computed, reactive, onMounted, defineProps, watchEffect } from 'vue';
 import BuildingMenu from '../components/BuildingMenu.vue';
 
 
@@ -82,7 +82,6 @@ function handleSquareClick(n: number) {
 async function selectBuilding(building: { name: string; img: string; cost: Record<string, number> }) {
   if (activeSquare.value !== null) {
     await placeBuilding(building.name, activeSquare.value);
-    squares.value[activeSquare.value] = building.img;
   }
   buildingDropdownOpen.value = false;
   activeSquare.value = null;
@@ -100,14 +99,21 @@ async function placeBuilding(buildingName: string, position: number) {
 };
 
 async function destroyBuilding(position: number) {
+  if (!props.buildings) return;
   const building = props.buildings.find(b => b.position === position);
   if (!building) return;
 
   try {
-    await router.delete(`/buildings/${building.id}`);
-    squares.value[position] = null;
-    buildingMenuOpen.value = false;
-    activeSquare.value = null;
+    await router.delete(`/buildings/${building.id}`, {
+      onSuccess: () => {
+        squares.value[position] = null;
+        buildingMenuOpen.value = false;
+        activeSquare.value = null;
+      },
+      onError: (error) => {
+        console.error('Failed to destroy building:', error);
+      }
+    });
   } catch (error) {
     console.error('Failed to destroy building:', error);
   }
@@ -157,8 +163,11 @@ async function fetchResources() {
   }
 }
 
-// Fetch resources when the component is mounted
-onMounted(() => {
+watchEffect(() => {
+  // Reset squares
+  for (let i = 0; i < squares.value.length; i++) {
+    squares.value[i] = null;
+  }
   if (props.buildings) {
     props.buildings.forEach(building => {
       const buildingInfo = buildingsList.find(b => b.name === building.building_name);
@@ -167,6 +176,10 @@ onMounted(() => {
       }
     });
   }
+});
+
+// Fetch resources when the component is mounted
+onMounted(() => {
   fetchResources()
 });
 
@@ -237,12 +250,6 @@ function closeBuildingDropdown() {
     <Head title="Dashboard" />
 
     <AppLayout :breadcrumbs="breadcrumbs" @click="closeBuildingDropdown">
-      <!-- Building selection dropdown -->
-      <!-- <select v-model="selectedBuilding" class="mb-4 p-2 border rounded">
-        <option v-for="building in buildings" :key="building.name" :value="building.name">
-          {{ building.name }} ({{ building.cost.wood }} Wood, {{ building.cost.stone }} Stone,)
-        </option>
-      </select> -->
       <!-- Display player's resources in the top right corner -->
       <div class="absolute top-4 right-4 flex flex-col items-end gap-2 z-20">
           <div v-for="resource in resources" :key="resource.value + '-top'" class="flex items-center gap-1">

@@ -35,7 +35,7 @@ class BuildingController extends Controller
                 'position' => $request->input('position'),
             ],
         );
-        return response()->json($building, 201);
+        return redirect()->route('dashboard');
     }
 
     // Display a listing of the player\'s buildings
@@ -53,6 +53,27 @@ class BuildingController extends Controller
         
         $buildings = Building::where('player_id', $player->id)->get();
         return response()->json(['buildings' => $buildings]);
+    }
+
+    public function destroy($id)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $player = $user->player;
+        if (!$player) {
+            return response()->json(['error' => 'Player not found'], 404);
+        }
+
+        $building = Building::where('id', $id)->where('player_id', $player->id)->first();
+        if (!$building) {
+            return response()->json(['error' => 'Building not found'], 404);
+        }
+
+        $building->delete();
+        return redirect()->route('dashboard');
     }
 }
     
